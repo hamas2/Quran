@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>تشغيل القرآن الكريم</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-xxx" crossorigin="anonymous" />
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            background-color: #121212;
+            color: #f0f0f0;
+            padding: 20px;
+            margin: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        .quran-player {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 50px;
+            animation: fadeIn 1s ease-in-out;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            background-color: #1b1b1b;
+            padding: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+        .custom-audio-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .progress-bar {
+            width: 100%;
+            max-width: 400px;
+            height: 5px;
+            background-color: #444;
+            margin-bottom: 10px;
+            position: relative;
+            border-radius: 2.5px;
+        }
+        .progress {
+            width: 0;
+            height: 100%;
+            background-color: #ff5733;
+            border-radius: 2.5px;
+        }
+        .time {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .search {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+        .search input[type="text"] {
+            width: 70%;
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 25px;
+            margin-right: 10px;
+            outline: none;
+        }
+        .search button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 25px;
+            background-color: #FF5733;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s ease;
+            outline: none;
+        }
+        .search button:hover {
+            background-color: #FF471A;
+            transform: scale(1.05);
+        }
+        .surah-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .surah-buttons button {
+            background: #3a3a3a;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 10px;
+            color: #fff;
+            border-radius: 10px;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+        .surah-buttons button:hover {
+            background: #555;
+            transform: scale(1.05);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        #surahButtons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        #surahButtons button {
+            background-color: #4a4a4a;
+            color: #fff;
+            font-size: 16px;
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        #surahButtons button:hover {
+            background-color: #ff5733;
+            transform: scale(1.05);
+        }
+        .custom-audio-controls .controls button {
+            background: #3a3a3a;
+            border: none;
+            cursor: pointer;
+            font-size: 22px;
+            margin: 10px;
+            padding: 12px 20px;
+            color: #fff;
+            border-radius: 10px;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+        .custom-audio-controls .controls button:hover {
+            background: #555; 
+            transform: scale(1.1);
+        }
+        
+        audio {
+    display: none;
+}
+    </style>
+</head>
+<body>
+    <div class="quran-player">
+        <h2>استمع إلى القرآن الكريم</h2>
+        <div class="custom-audio-controls">
+            <div class="progress-bar">
+                <div class="progress"></div>
+            </div>
+            <div class="time">
+                <span class="current-time">0:00</span>
+                <span class="duration">0:00</span>
+            </div>
+            <div class="controls">
+                <button id="prev"><i class="fas fa-backward"></i></button>
+                <button id="play"><i class="fas fa-play"></i></button>
+                <button id="next"><i class="fas fa-forward"></i></button>
+                <button id="repeat"><i class="fas fa-redo"></i></button>
+            </div>
+        </div>
+        <audio id="quranAudio" controls>
+            متصفحك لا يدعم تشغيل الصوت.
+        </audio>
+        <div class="search">
+            <input type="text" id="searchInput" placeholder="ادخل رقم السورة للتشغيل">
+            <button onclick="searchSurah()">بحث</button>
+        </div>
+        <div class="surah-buttons" id="surahButtons">
+        </div>
+    </div>
+
+    <script>
+               const audioElement = document.getElementById('quranAudio');
+        const playButton = document.getElementById('play');
+        const prevButton = document.getElementById('prev');
+        const nextButton = document.getElementById('next');
+        const repeatButton = document.getElementById('repeat');
+        const progressBar = document.querySelector('.progress-bar .progress');
+        const currentTimeElement = document.querySelector('.current-time');
+        const durationElement = document.querySelector('.duration');
+
+        playButton.addEventListener('click', () => {
+            if (audioElement.paused) {
+                audioElement.play();
+                playButton.innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+                audioElement.pause();
+                playButton.innerHTML = '<i class="fas fa-play"></i>';
+            }
+        });
+
+        audioElement.addEventListener('timeupdate', () => {
+            const currentTime = audioElement.currentTime;
+            const duration = audioElement.duration;
+            progressBar.style.width = `${(currentTime / duration) * 100}%`;
+
+            const currentMinutes = Math.floor(currentTime / 60);
+            const currentSeconds = Math.floor(currentTime % 60);
+            const durationMinutes = Math.floor(duration / 60);
+            const durationSeconds = Math.floor(duration % 60);
+
+            currentTimeElement.textContent = `${currentMinutes}:${currentSeconds < 10 ? '0' : ''}${currentSeconds}`;
+            durationElement.textContent = `${durationMinutes}:${durationSeconds < 10 ? '0' : ''}${durationSeconds}`;
+        });
+
+        async function searchSurah() {
+            const searchInput = document.getElementById('searchInput').value.trim();
+            let surahNumber = searchInput;
+
+            if (!isNaN(surahNumber)) {
+                surahNumber = parseInt(surahNumber);
+                if (surahNumber < 1 || surahNumber > 114) {
+                    alert('الرجاء إدخال رقم صحيح بين 1 و 114 لرقم السورة.');
+                    return;
+                }
+            } else {
+                const surahs = await fetch('https://api.alquran.cloud/v1/surah');
+                const surahsData = await surahs.json();
+                const foundSurah = surahsData.data.find(surah => 
+                    surah.name.replace(/[^\w\s]/gi, '').toLowerCase().includes(searchInput.toLowerCase())
+                );
+
+                if (!foundSurah) {
+                    alert('لم يتم العثور على سورة بهذا الاسم. الرجاء المحاولة مرة أخرى.');
+                    return;
+                }
+                surahNumber = foundSurah.number;
+            }
+
+            const apiUrl = `https://api.alquran.cloud/v1/surah/${surahNumber}/ar.alafasy`;
+
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                const audioUrls = data.data.ayahs.map(ayah => ayah.audio);
+                playAudioSequence(audioElement, audioUrls);
+            } catch (error) {
+                console.error('خطأ في جلب البيانات:', error);
+            }
+        }
+
+        function playAudioSequence(audioElement, audioUrls) {
+            let currentAudioIndex = 0;
+
+            audioElement.src = audioUrls[currentAudioIndex];
+            audioElement.play();
+
+            audioElement.onended = () => {
+                currentAudioIndex++;
+                if (currentAudioIndex < audioUrls.length) {
+                    audioElement.src = audioUrls[currentAudioIndex];
+                    audioElement.play();
+                } else {
+                    currentAudioIndex = 0;
+                    audioElement.src = audioUrls[currentAudioIndex];
+                }
+            };
+        }
+
+        prevButton.addEventListener('click', () => {
+            
+        });
+
+        nextButton.addEventListener('click', () => {
+           
+        });
+
+        repeatButton.addEventListener('click', () => {
+            audioElement.currentTime = 0;
+            audioElement.play();
+        });
+
+       
+        function loadSurahButtons() {
+            fetch('https://api.alquran.cloud/v1/surah')
+                .then(response => response.json())
+                .then(data => {
+                    const surahButtonsContainer = document.getElementById('surahButtons');
+                    data.data.forEach(surah => {
+                        const button = document.createElement('button');
+                        button.textContent = `${surah.number}. ${surah.name}`;
+                        button.onclick = () => {
+                            const audioUrl = `https://api.alquran.cloud/v1/surah/${surah.number}/ar.alafasy`;
+                            fetch(audioUrl)
+                                .then(res => res.json())
+                                .then(data => {
+                                    const audioUrls = data.data.ayahs.map(ayah => ayah.audio);
+                                    playAudioSequence(audioElement, audioUrls);
+                                });
+                        };
+                        surahButtonsContainer.appendChild(button);
+                    });
+                })
+                .catch(error => console.error('خطأ في تحميل أزرار السور:', error));
+        }
+
+        window.onload = loadSurahButtons; 
+    </script>
+</body>
+</html>
